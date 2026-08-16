@@ -1,0 +1,19 @@
+node_modules/
+apps/website/dist/
+apps/agent/.venv/
+apps/agent/.pytest_cache/
+apps/agent/**/*.pyc
+apps/agent/**/__pycache__/
+apps/agent/*.egg-info/
+.env
+.dev.vars
+.wrangler/
+
+# Agent scratch/progress notes
+progress.md
+.progress.md
+.pi-screenshots/
+audit-subagents/
+
+# Private operator notes and historical planning docs
+private/

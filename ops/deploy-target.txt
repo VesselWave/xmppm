@@ -1,0 +1,4 @@
+VPS deploy target: set locally with TARGET=user@host.
+Public address: see config/dns-records.
+Sudo: passwordless sudo is expected for the bounded commands installed by this repository.
+Purpose: deploy ejabberd, HTTPS gateway, agent, and backups config.

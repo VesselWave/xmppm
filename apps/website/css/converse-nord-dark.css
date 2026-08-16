@@ -1,0 +1,43 @@
+/* Nord dark palette: https://www.nordtheme.com/docs/colors-and-palettes */
+.conversejs[data-converse-theme="dracula"],
+.conversejs[data-bs-theme="dracula"],
+converse-bg[data-converse-theme="dracula"],
+converse-bg[data-bs-theme="dracula"] {
+  --background-color: #2e3440;
+  --background-color-rgb: 46, 52, 64;
+  --foreground-color: #e5e9f0;
+  --darkgray: #3b4252;
+  --gray: #4c566a;
+  --cyan: #88c0d0;
+  --green: #a3be8c;
+  --green-rgb: 163, 190, 140;
+  --orange: #d08770;
+  --orange-rgb: 208, 135, 112;
+  --pink: #88c0d0;
+  --pink-rgb: 136, 192, 208;
+  --purple: #81a1c1;
+  --purple-rgb: 129, 161, 193;
+  --red: #bf616a;
+  --red-rgb: 191, 97, 106;
+  --yellow: #ebcb8b;
+  --yellow-rgb: 235, 203, 139;
+  --chat-rgb: 136, 192, 208;
+  --muc-rgb: 129, 161, 193;
+  --primary-color: #88c0d0 !important;
+  --primary-rgb: 136, 192, 208;
+  --primary-color-hover: #8fbcbb !important;
+  --secondary-color: #81a1c1 !important;
+  --secondary-rgb: 129, 161, 193;
+  --success-color: #a3be8c;
+  --success-color-rgb: 163, 190, 140;
+  --danger-color: #bf616a;
+  --danger-color-rgb: 191, 97, 106;
+  --warning-color: #d08770;
+  --info-color: #88c0d0;
+  --info-color-rgb: 136, 192, 208;
+  --converse-highlight-color: #88c0d0 !important;
+  --converse-border-color: #4c566a;
+  --converse-body-bg: #2e3440;
+  --converse-body-bg-rgb: 46, 52, 64;
+  --converse-body-color: #e5e9f0 !important;
+}

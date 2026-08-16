@@ -1,0 +1,8 @@
+[Unit]
+Description=xmp.pm encrypted backup snapshot
+Wants=postgresql.service
+After=postgresql.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/xmppm-backup

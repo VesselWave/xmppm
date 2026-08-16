@@ -1,0 +1,24 @@
+[Unit]
+Description=xmp.pm invite and monitoring agent
+After=network-online.target ejabberd.service nginx.service postgresql.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=xmppm-agent
+Group=xmppm-agent
+WorkingDirectory=/opt/xmppm-agent/agent
+EnvironmentFile=/etc/xmppm-agent.env
+ExecStart=/opt/xmppm-agent/agent/.venv/bin/xmppm-agent
+Restart=always
+RestartSec=10
+# NoNewPrivileges=false is intentional: sudo needs privilege elevation for ejabberdctl and docker inspect.
+# NOPASSWD commands are bounded in ops/sudoers.d/xmppm-agent.
+NoNewPrivileges=false
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/xmppm-agent
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,79 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+CERT_OUT=/etc/ssl/certs/ejabberd/fullchain.pem
+KEY_OUT=/etc/ssl/private/ejabberd/privkey.pem
+TMPDIR=$(mktemp -d)
+trap 'rm -rf "$TMPDIR"' EXIT
+
+install -d -o root -g ejabberd -m 0750 /etc/ssl/certs/ejabberd /etc/ssl/private/ejabberd
+
+python3 - "$TMPDIR/fullchain.pem" "$TMPDIR/privkey.pem" <<'PY'
+import base64
+import json
+import sys
+from pathlib import Path
+
+cert_out = Path(sys.argv[1])
+key_out = Path(sys.argv[2])
+candidates = [
+    Path('/var/lib/docker/volumes/xmppm-gateway_traefik_letsencrypt/_data/acme.json'),
+]
+for acme in candidates:
+    if acme.exists():
+        break
+else:
+    raise SystemExit('Traefik acme.json not found; cannot sync ejabberd TLS cert')
+
+required_names = {
+    'xmp.pm',
+    'xmpp.xmp.pm',
+    'conference.xmp.pm',
+    'pubsub.xmp.pm',
+    'upload.xmp.pm',
+}
+
+data = json.loads(acme.read_text())
+covered_names = set()
+pem_entries = []
+primary_key = None
+for cert in data.get('letsencrypt', {}).get('Certificates', []):
+    domain = cert.get('domain', {})
+    names = {domain.get('main'), *domain.get('sans', [])}
+    names.discard(None)
+    if not names & required_names:
+        continue
+    chain = base64.b64decode(cert['certificate'])
+    key = base64.b64decode(cert['key'])
+    pem_entries.append(chain + b'\n' + key)
+    covered_names.update(names & required_names)
+    if primary_key is None:
+        primary_key = key
+
+missing_names = sorted(required_names - covered_names)
+if missing_names:
+    raise SystemExit('Traefik acme.json lacks ejabberd TLS certs for: ' + ', '.join(missing_names))
+if primary_key is None:
+    raise SystemExit('Traefik acme.json did not contain ejabberd TLS cert material')
+cert_out.write_bytes(b'\n'.join(pem_entries) + b'\n')
+key_out.write_bytes(primary_key)
+PY
+
+openssl x509 -in "$TMPDIR/fullchain.pem" -noout -subject -dates >"$TMPDIR/cert-info.txt"
+
+if [[ -f "$CERT_OUT" ]] && [[ -f "$KEY_OUT" ]] && cmp -s "$TMPDIR/fullchain.pem" "$CERT_OUT" && cmp -s "$TMPDIR/privkey.pem" "$KEY_OUT"; then
+  chown root:ejabberd "$CERT_OUT" "$KEY_OUT"
+  chmod 0640 "$CERT_OUT" "$KEY_OUT"
+  echo "ejabberd TLS cert unchanged"
+  exit 0
+fi
+
+install -o root -g ejabberd -m 0640 "$TMPDIR/fullchain.pem" "$CERT_OUT"
+install -o root -g ejabberd -m 0640 "$TMPDIR/privkey.pem" "$KEY_OUT"
+install -d -o xmppm-agent -g xmppm-agent -m 0750 /var/lib/xmppm-agent
+printf '%s\n' 'scheduled TLS certificate update' \
+  >/var/lib/xmppm-agent/ejabberd-reason
+chown xmppm-agent:xmppm-agent /var/lib/xmppm-agent/ejabberd-reason
+chmod 0640 /var/lib/xmppm-agent/ejabberd-reason
+systemctl restart ejabberd
+echo "ejabberd TLS cert updated"

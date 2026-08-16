@@ -1,0 +1,3 @@
+# Legacy path retained for operator reference.
+# The deployed xmp.pm web app is served by Cloudflare Worker Assets.
+# The VPS gateway nginx config lives in ops/vps/xmppm-nginx.conf and serves only xmpp.xmp.pm /ws and /bosh.

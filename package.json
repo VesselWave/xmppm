@@ -1,0 +1,22 @@
+{
+  "name": "xmppm-worker",
+  "private": true,
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "assets": "ops/fetch-converse.sh",
+    "dev": "bun run assets && wrangler dev --port 4000 --assets apps/website",
+    "site": "bun run assets && python3 -m http.server 4000 -d apps/website",
+    "build": "tsc --noEmit",
+    "deploy": "bun run assets && wrangler deploy --config wrangler.toml",
+    "test": "bun test",
+    "typecheck": "tsc --noEmit",
+    "cf-typegen": "wrangler types"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "latest",
+    "bun-types": "latest",
+    "typescript": "latest",
+    "wrangler": "latest"
+  }
+}

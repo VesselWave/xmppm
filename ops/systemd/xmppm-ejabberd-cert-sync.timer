@@ -1,0 +1,11 @@
+[Unit]
+Description=Daily xmp.pm ejabberd certificate sync
+
+[Timer]
+OnCalendar=daily
+Persistent=true
+RandomizedDelaySec=1h
+Unit=xmppm-ejabberd-cert-sync.service
+
+[Install]
+WantedBy=timers.target

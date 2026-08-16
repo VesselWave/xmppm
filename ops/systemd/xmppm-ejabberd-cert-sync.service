@@ -1,0 +1,7 @@
+[Unit]
+Description=Sync xmp.pm Traefik certificate into ejabberd
+After=docker.service ejabberd.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/xmppm-ejabberd-cert-sync

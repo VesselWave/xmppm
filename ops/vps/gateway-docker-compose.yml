@@ -1,0 +1,47 @@
+services:
+  traefik:
+    image: traefik:v3.6
+    container_name: xmppm-traefik
+    restart: unless-stopped
+    command:
+      - "--log.level=INFO"
+      - "--accesslog=true"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.websecure.address=:443"
+      - "--entrypoints.web.http.redirections.entrypoint.to=websecure"
+      - "--entrypoints.web.http.redirections.entrypoint.scheme=https"
+      - "--certificatesresolvers.letsencrypt.acme.email=vesselwave@protonmail.com"
+      - "--certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json"
+      - "--certificatesresolvers.letsencrypt.acme.tlschallenge=true"
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - traefik_letsencrypt:/letsencrypt
+
+  xmppm-worker-proxy:
+    image: nginx:1.30.3-alpine3.23-slim
+    container_name: xmppm-worker-proxy
+    restart: unless-stopped
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - ./xmppm-nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.xmppm.rule=Host(`xmpp.xmp.pm`)
+      - traefik.http.routers.xmppm.entrypoints=websecure
+      - traefik.http.routers.xmppm.tls=true
+      - traefik.http.routers.xmppm.tls.certresolver=letsencrypt
+      - traefik.http.routers.xmppm.tls.domains[0].main=xmpp.xmp.pm
+      - traefik.http.routers.xmppm.tls.domains[0].sans=conference.xmp.pm,pubsub.xmp.pm,upload.xmp.pm
+      - traefik.http.routers.xmppm.service=xmppm-worker-proxy
+      - traefik.http.services.xmppm-worker-proxy.loadbalancer.server.port=80
+
+volumes:
+  traefik_letsencrypt:
+    external: true
+    name: xmppm-gateway_traefik_letsencrypt

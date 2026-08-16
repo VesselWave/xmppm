@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en-US">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>xmp.pm invite</title>
+  <meta name="description" content="Redeem a one-time xmp.pm XMPP invite.">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/css/invite.css?v=2">
+</head>
+<body>
+  <main class="ticket">
+    <section class="main">
+      <p class="kicker">underground network pass</p>
+      <h1>xmp.pm invite</h1>
+      <p>This is a one-time registration pass for <strong>xmp.pm</strong>. It requires an XMPP client with invite/preauth registration support.</p>
+
+      <div class="token" aria-live="polite">
+        <span class="token-label">invite token</span>
+        <code id="token">reading token…</code>
+      </div>
+
+      <p id="message" class="note">Open the link in a client that supports XEP-0445 invite/pre-auth registration. If that fails, copy the invite token and paste it when your client asks for one.</p>
+
+      <div class="actions">
+        <a id="open" href="#">Open in XMPP client</a>
+        <button id="copy-token" class="secondary" type="button">Copy invite token</button>
+        <button id="copy" class="secondary" type="button">Copy XMPP URI</button>
+        <a class="secondary" href="/">Go to home page</a>
+      </div>
+    </section>
+    <aside class="stub" aria-hidden="true">
+      <span>one use</span>
+      <span>xmp.pm</span>
+      <span>federated</span>
+    </aside>
+  </main>
+
+  <script>
+    function tokenFromUri(uri) {
+      const match = uri.match(/[?;]preauth=([^;&]+)/);
+      return match ? decodeURIComponent(match[1]) : "";
+    }
+
+    function tokenFromLocation() {
+      const url = new URL(window.location.href);
+      const explicitToken = url.searchParams.get("token");
+      const explicitUri = url.searchParams.get("uri");
+      if (explicitUri) return { uri: explicitUri, token: tokenFromUri(explicitUri) || "embedded in URI" };
+      if (explicitToken) return { token: explicitToken };
+
+      const hash = decodeURIComponent(url.hash.replace(/^#/, ""));
+      if (hash.startsWith("xmpp:")) return { uri: hash, token: tokenFromUri(hash) || "embedded in URI" };
+      if (hash) return { token: hash };
+
+      const pathMatch = url.pathname.match(/\/invites\/([^/]+)/);
+      if (pathMatch) return { token: decodeURIComponent(pathMatch[1]) };
+
+      return { token: "" };
+    }
+
+    const parsed = tokenFromLocation();
+    const token = parsed.token || "";
+    const uri = parsed.uri || (token ? `xmpp:xmp.pm?register;preauth=${encodeURIComponent(token)}` : "");
+
+    const tokenNode = document.getElementById("token");
+    const openNode = document.getElementById("open");
+    const copyNode = document.getElementById("copy");
+    const tokenCopyNode = document.getElementById("copy-token");
+    const messageNode = document.getElementById("message");
+
+    if (!uri) {
+      tokenNode.textContent = "missing token";
+      messageNode.textContent = "This invite URL does not include a token. Ask the operator for a fresh link.";
+      messageNode.className = "error";
+      openNode.removeAttribute("href");
+      copyNode.disabled = true;
+      tokenCopyNode.disabled = true;
+    } else {
+      tokenNode.textContent = token || "embedded in URI";
+      openNode.href = uri;
+      copyNode.addEventListener("click", async () => {
+        await navigator.clipboard.writeText(uri);
+        copyNode.textContent = "Copied";
+      });
+      tokenCopyNode.addEventListener("click", async () => {
+        await navigator.clipboard.writeText(token);
+        tokenCopyNode.textContent = "Copied";
+      });
+    }
+  </script>
+</body>
+</html>

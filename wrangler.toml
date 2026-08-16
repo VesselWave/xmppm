@@ -1,0 +1,38 @@
+name = "xmppm-invites"
+main = "apps/worker/index.ts"
+workers_dev = false
+compatibility_date = "2026-06-15"
+routes = [ { pattern = "xmp.pm/*", zone_name = "xmp.pm" }, { pattern = "www.xmp.pm/*", zone_name = "xmp.pm" }, ]
+
+[assets]
+directory = "./apps/website"
+binding = "ASSETS"
+run_worker_first = true
+html_handling = "none"
+
+[triggers]
+crons = ["17 3 * * *"]
+
+[[d1_databases]]
+binding = "DB"
+database_name = "xmppm_invites"
+database_id = "9b73b204-48de-4eb8-a32a-f8a628aa71f0"
+
+[vars]
+SERVICE_DOMAIN = "xmp.pm"
+STATUS_BASE_URL = "https://xmp.pm"
+REQUEST_RETENTION_DAYS = "7"
+APPROVED_RETENTION_DAYS = "14"
+RATE_LIMIT_WINDOW_SECONDS = "3600"
+RATE_LIMIT_MAX_SUBMISSIONS = "3"
+TURNSTILE_SITE_KEY = "0x4AAAAAADk8aXgJ3XjMfH_P"
+# Operator IP bypasses are intentionally unset in committed config.
+# Set RATE_LIMIT_BYPASS_IPS/TRUSTED_FORM_IPS via environment-specific Wrangler vars/secrets only.
+
+# Set as Worker secrets:
+# TELEGRAM_ADMIN_CHAT_ID
+# TELEGRAM_ADMIN_USER_IDS
+# TELEGRAM_BOT_TOKEN
+# TELEGRAM_WEBHOOK_SECRET
+# AGENT_BEARER_TOKEN
+# TURNSTILE_SECRET_KEY

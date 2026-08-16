@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en-US">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>xmp.pm service info</title>
+  <meta name="description" content="xmp.pm service limits, retention, and operating policy.">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="css/xmppm.css">
+</head>
+<body>
+  <main>
+    <section class="sheet">
+      <header class="header">
+        <div>
+          <h1>xmp.pm info</h1>
+          <p>Limits and retention for the xmp.pm public XMPP service.</p>
+        </div>
+        <nav class="lang" aria-label="navigation">
+          <a class="button" href="/">Home</a>
+          <a class="button" href="legal.html">Legal</a>
+        </nav>
+      </header>
+
+      <div class="grid">
+        <article>
+          <h2>Hosting and encryption</h2>
+          <ul>
+            <li>The server runs in Oracle Cloud’s Switzerland region, where service data is normally stored.</li>
+            <li>Oracle is a U.S.-based infrastructure provider and may be required to respond to lawful government requests.</li>
+            <li>OMEMO end-to-end encryption is designed to keep encrypted message content unreadable to the server.</li>
+            <li>Connection and communication metadata is not protected by OMEMO and may be processed and retained.</li>
+          </ul>
+
+          <h2>Retention</h2>
+          <ul>
+            <li>MAM chat archive: 7 days by default, with opt-out if your client supports it.</li>
+            <li>Offline messages: 30 days or until delivered, whichever is sooner.</li>
+            <li>HTTP uploads: 7 days.</li>
+            <li>Operational, security, and abuse logs: up to 7 days.</li>
+            <li>Encrypted backups: 14 daily snapshots.</li>
+            <li>Invite tokens: 14 days or one use.</li>
+            <li>Deleted accounts: removed live immediately; backups age out within 14 days.</li>
+            <li>Website analytics/tracking: none run by xmp.pm; no analytics script, tracking pixel, or analytics cookie is added.</li>
+            <li>Web edge provider: Cloudflare serves the website and invite pages and may process HTTP metadata for delivery, security, rate limiting, and abuse prevention.</li>
+          </ul>
+
+          <h2>Limits</h2>
+          <ul>
+            <li>HTTP upload quota: 100 MiB per user.</li>
+            <li>Maximum HTTP upload size: 100 MiB per file.</li>
+            <li>Concurrent sessions: up to 10 per user.</li>
+            <li>Multi-user chat is available, but abusive rooms may be removed.</li>
+          </ul>
+
+          <h2>Service metadata</h2>
+          <ul>
+            <li>Organization: private person.</li>
+            <li>Bus factor: 1.</li>
+            <li>Free of charge: true; donations are optional.</li>
+            <li>Server region: Oracle Cloud Switzerland.</li>
+            <li>Since: 2026-06-14.</li>
+          </ul>
+
+          <h2>Testing permission</h2>
+          <p>Automated XMPP provider checks, TLS checks, uptime checks, and compliance checks are allowed. Abuse, probing, and pentesting remain forbidden without explicit approval.</p>
+        </article>
+
+        <aside>
+          <section class="panel">
+            <h2>Registration</h2>
+            <p>Registration is invite-only. Use <a href="/request">the request form</a> or contact the operator.</p>
+          </section>
+          <section class="panel">
+            <h2>Contact</h2>
+            <p>XMPP <a href="xmpp:admin@xmp.pm">admin@xmp.pm</a><br>
+            Mail <a href="mailto:vesselwave@protonmail.com">vesselwave@protonmail.com</a></p>
+          </section>
+          <section class="panel">
+            <h2>Provider documents</h2>
+            <p><a href="legal.html">Legal notice</a></p>
+          </section>
+        </aside>
+      </div>
+    </section>
+  </main>
+</body>
+</html>

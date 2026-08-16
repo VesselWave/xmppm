@@ -1,0 +1,20 @@
+{
+  "website": {
+    "en": "https://xmp.pm/"
+  },
+  "alternativeJids": [],
+  "busFactor": 1,
+  "organization": "private person",
+  "passwordReset": {},
+  "serverTesting": true,
+  "maximumHttpFileUploadTotalSize": 105,
+  "maximumHttpFileUploadStorageTime": 7,
+  "maximumMessageArchiveManagementStorageTime": 7,
+  "professionalHosting": true,
+  "freeOfCharge": true,
+  "legalNotice": {
+    "en": "https://xmp.pm/legal.html"
+  },
+  "serverLocations": ["ch"],
+  "since": "2026-06-14"
+}

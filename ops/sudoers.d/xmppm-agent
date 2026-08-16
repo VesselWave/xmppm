@@ -1,0 +1,4 @@
+# Install as /etc/sudoers.d/xmppm-agent with mode 0440.
+# Validate with: visudo -cf /etc/sudoers.d/xmppm-agent
+xmppm-agent ALL=(ejabberd) NOPASSWD: /usr/sbin/ejabberdctl register * xmp.pm *, /usr/sbin/ejabberdctl change_password * xmp.pm *
+xmppm-agent ALL=(root) NOPASSWD: /usr/bin/docker inspect -f {{json .State}} xmppm-traefik, /usr/bin/docker inspect -f {{json .State}} xmppm-worker-proxy

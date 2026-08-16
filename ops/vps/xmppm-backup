@@ -1,0 +1,86 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+BACKUP_DIR=${XMPPM_BACKUP_DIR:-/var/backups/xmppm}
+KEY_FILE=${XMPPM_BACKUP_KEY_FILE:-/etc/xmppm-backup.key}
+MARKER=${XMPPM_BACKUP_MARKER:-/var/lib/xmppm-agent/backup-ok}
+RETENTION_DAYS=${XMPPM_BACKUP_RETENTION_DAYS:-14}
+STAMP=$(date -u +%Y%m%dT%H%M%SZ)
+HOST=$(hostname -f 2>/dev/null || hostname)
+SNAPSHOT="$BACKUP_DIR/xmppm-$HOST-$STAMP.tar.gz.enc"
+TMP_SNAPSHOT="$SNAPSHOT.tmp"
+STAGING=$(mktemp -d)
+
+STATE_DIR=$(dirname "$MARKER")
+ERROR_MARKER="$STATE_DIR/backup-error"
+
+cleanup() {
+  rm -rf "$STAGING"
+  rm -f "$TMP_SNAPSHOT"
+}
+record_error() {
+  local exit_code=$1 line=$2 command=$3
+  printf 'exit %s at line %s: %.160s\n' "$exit_code" "$line" "$command" >"$ERROR_MARKER" || true
+  chown xmppm-agent:xmppm-agent "$ERROR_MARKER" 2>/dev/null || true
+  chmod 0640 "$ERROR_MARKER" 2>/dev/null || true
+}
+trap cleanup EXIT
+trap 'record_error "$?" "$LINENO" "$BASH_COMMAND"' ERR
+
+install -d -o root -g root -m 0700 "$BACKUP_DIR"
+install -d -o xmppm-agent -g xmppm-agent -m 0750 "$STATE_DIR"
+
+if [[ ! -s "$KEY_FILE" ]]; then
+  umask 077
+  openssl rand -base64 48 >"$KEY_FILE"
+  chown root:root "$KEY_FILE"
+  chmod 0400 "$KEY_FILE"
+fi
+
+install -d -m 0700 "$STAGING/postgres" "$STAGING/files"
+runuser -u postgres -- pg_dump -Fc ejabberd >"$STAGING/postgres/ejabberd.pgcustom"
+
+paths=(
+  /opt/ejabberd/database/ejabberd@localhost
+  /opt/ejabberd/upload
+  /opt/ejabberd/uploads
+  /opt/ejabberd/conf/ejabberd.yml
+  /usr/local/etc/ejabberd
+  /etc/xmppm-agent.env
+  /etc/systemd/system/xmppm-agent.service
+  /etc/systemd/system/xmppm-backup.service
+  /etc/systemd/system/xmppm-backup.timer
+)
+
+for path in "${paths[@]}"; do
+  if [[ -e "$path" ]]; then
+    parent=$(dirname "$path")
+    install -d -m 0700 "$STAGING/files$parent"
+    cp -a "$path" "$STAGING/files$parent/"
+  fi
+done
+
+cat >"$STAGING/MANIFEST.txt" <<MANIFEST
+created_utc=$STAMP
+host=$HOST
+retention_days=$RETENTION_DAYS
+contents=postgres ejabberd-state uploads config agent-env systemd-units
+restore_hint=decrypt with openssl enc -d -aes-256-cbc -pbkdf2 -pass file:$KEY_FILE, then tar -xzf
+MANIFEST
+
+tar -C "$STAGING" -czf - . \
+  | openssl enc -aes-256-cbc -pbkdf2 -salt -pass "file:$KEY_FILE" -out "$TMP_SNAPSHOT"
+chmod 0600 "$TMP_SNAPSHOT"
+
+openssl enc -d -aes-256-cbc -pbkdf2 -pass "file:$KEY_FILE" -in "$TMP_SNAPSHOT" \
+  | tar -tzf - >/dev/null
+
+mv "$TMP_SNAPSHOT" "$SNAPSHOT"
+touch "$MARKER"
+chown xmppm-agent:xmppm-agent "$MARKER"
+chmod 0640 "$MARKER"
+rm -f "$ERROR_MARKER"
+
+find "$BACKUP_DIR" -maxdepth 1 -type f -name 'xmppm-*.tar.gz.enc' -mtime "+$RETENTION_DAYS" -delete
+
+echo "backup ok: $SNAPSHOT"

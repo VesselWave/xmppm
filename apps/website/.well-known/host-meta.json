@@ -1,0 +1,12 @@
+{
+  "links": [
+    {
+      "rel": "urn:xmpp:alt-connections:xbosh",
+      "href": "https://xmpp.xmp.pm/bosh"
+    },
+    {
+      "rel": "urn:xmpp:alt-connections:websocket",
+      "href": "wss://xmpp.xmp.pm/ws"
+    }
+  ]
+}
