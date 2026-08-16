@@ -217,16 +217,8 @@ handling notes.
 
 ## License
 
-This repository contains mixed materials:
+Project code is [MIT licensed](LICENSE).
 
-- Project-specific website, Worker, agent, and ops glue are licensed under the
-  [MIT License](LICENSE), using SPDX identifier `MIT`.
-- OSI reference: <https://opensource.org/license/mit>
 - `config/ejabberd.yml`: GPLv2, following the upstream config lineage.
 - `config/dns-records`: public domain.
-- Converse.js is not stored in git. `ops/fetch-converse.sh` downloads the latest
-  stable npm release, verifies its registry SHA-512 integrity, and copies its
-  MPL-2.0 `LICENSE` and `COPYRIGHT` files beside the generated distribution.
-- The project-owned Nord theme remains tracked separately at
-  `apps/website/css/converse-nord-dark.css`; refreshing Converse.js does not
-  overwrite it.
+- Converse.js is fetched from npm with its MPL-2.0 license notices.
