@@ -41,4 +41,5 @@ export type InviteRequest = {
   decided_at: number | null;
   invite_ready_at: number | null;
   expires_at: number;
+  merged_into_request_id?: string | null;
 };

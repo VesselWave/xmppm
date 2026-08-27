@@ -64,8 +64,8 @@ export async function insertInviteRequest(db: D1Database, row: InviteRequest): P
       `INSERT INTO invite_requests (
         id, secret_hash, claim_code_hash, desired_username, message, contact,
         status, invite_url, telegram_message_id, failure_summary,
-        created_at, decided_at, invite_ready_at, expires_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+        created_at, decided_at, invite_ready_at, expires_at, merged_into_request_id
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
     )
     .bind(
       row.id,
@@ -81,7 +81,8 @@ export async function insertInviteRequest(db: D1Database, row: InviteRequest): P
       row.created_at,
       row.decided_at,
       row.invite_ready_at,
-      row.expires_at
+      row.expires_at,
+      row.merged_into_request_id ?? null
     )
     .run());
 }
@@ -111,6 +112,18 @@ export async function findRequestBySecretHash(
   return await withD1Retry(() => db
     .prepare("SELECT * FROM invite_requests WHERE secret_hash = ?")
     .bind(secretHash)
+    .first<InviteRequest>());
+}
+
+export async function findActiveRequestByUsername(
+  db: D1Database,
+  username: string
+): Promise<InviteRequest | null> {
+  return await withD1Retry(() => db
+    .prepare(
+      "SELECT * FROM invite_requests WHERE desired_username = ? AND merged_into_request_id IS NULL AND status IN ('pending', 'approved_pending_invite', 'invite_ready') ORDER BY created_at ASC LIMIT 1"
+    )
+    .bind(username)
     .first<InviteRequest>());
 }
 

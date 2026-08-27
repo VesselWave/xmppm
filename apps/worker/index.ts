@@ -3,6 +3,7 @@ import {
   consumeRateLimit,
   decideRequest,
   expireStalePasswordChanges,
+  findActiveRequestByUsername,
   findRequestById,
   findRequestBySecretHash,
   getAgentPublicKey,
@@ -277,7 +278,8 @@ async function handleSubmit(request: Request, env: Env): Promise<Response> {
     const claimCode = createId(8);
     const id = `req_${createId(12)}`;
     const now = nowSeconds();
-    const expiresAt = now + Number(env.REQUEST_RETENTION_DAYS) * 86400;
+    const existing = await findActiveRequestByUsername(env.DB, username);
+    const expiresAt = existing?.expires_at ?? now + Number(env.REQUEST_RETENTION_DAYS) * 86400;
     const row: InviteRequest = {
       id,
       secret_hash: await hashSecret(secret),
@@ -293,11 +295,12 @@ async function handleSubmit(request: Request, env: Env): Promise<Response> {
       decided_at: trustedFormIp ? now : null,
       invite_ready_at: null,
       expires_at: expiresAt,
+      merged_into_request_id: existing?.id ?? null,
     };
     await insertInviteRequest(env.DB, row);
 
     const statusUrl = `${env.STATUS_BASE_URL}/status/${secret}`;
-    if (!trustedFormIp) {
+    if (!trustedFormIp && !existing) {
       try {
         const msgId = await sendInviteRequestMessage(env, {
           requestId: id,
@@ -342,7 +345,11 @@ async function handleStatus(pathname: string, env: Env): Promise<Response> {
   const secret = safeDecodeURIComponent(pathname.replace("/status/", ""));
   if (secret === null) return html("Invalid status link.", 400);
   if (!secret) return html("Missing status secret.", 400);
-  const row = await findRequestBySecretHash(env.DB, await hashSecret(secret));
+  const submittedRow = await findRequestBySecretHash(env.DB, await hashSecret(secret));
+  if (!submittedRow) return html("Request not found.", 404);
+  const row = submittedRow.merged_into_request_id
+    ? await findRequestById(env.DB, submittedRow.merged_into_request_id)
+    : submittedRow;
   if (!row) return html("Request not found.", 404);
   if (row.expires_at <= nowSeconds()) return html("This request expired.", 410);
   await ensureTelegramNotification(env, row, `${env.STATUS_BASE_URL}/status/${encodeURIComponent(secret)}`);

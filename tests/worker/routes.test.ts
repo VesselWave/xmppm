@@ -792,7 +792,7 @@ describe("worker routes", () => {
     expect(response.status).toBe(303);
     expect(response.headers.get("location")).toStartWith("https://xmp.pm/status/");
     expect(bindings.some((binding) => binding.sql.includes("rate_limits"))).toBe(false);
-    const insertBinding = bindings.find((binding) => binding.args.length === 14);
+    const insertBinding = bindings.find((binding) => binding.args.length === 15);
     expect(insertBinding?.args[6]).toBe("approved_pending_invite");
     expect(typeof insertBinding?.args[11]).toBe("number");
   });
@@ -833,7 +833,7 @@ describe("worker routes", () => {
     expect(response.status).toBe(303);
     expect(bindings.some((binding) => binding.sql.includes("rate_limits"))).toBe(false);
     expect(fetchedUrls.some((url) => url.includes("turnstile"))).toBe(true);
-    const insertBinding = bindings.find((binding) => binding.args.length === 14);
+    const insertBinding = bindings.find((binding) => binding.args.length === 15);
     expect(insertBinding?.args[6]).toBe("pending");
   });
 
@@ -873,7 +873,7 @@ describe("worker routes", () => {
     expect(response.status).toBe(303);
     expect(bindings.some((binding) => binding.sql.includes("rate_limits"))).toBe(true);
     expect(fetchedUrls.some((url) => url.includes("turnstile"))).toBe(true);
-    const insertBinding = bindings.find((binding) => binding.args.length === 14);
+    const insertBinding = bindings.find((binding) => binding.args.length === 15);
     expect(insertBinding?.args[6]).toBe("pending");
   });
 
@@ -908,7 +908,7 @@ describe("worker routes", () => {
     );
     expect(response.status).toBe(303);
     expect(response.headers.get("location")).toStartWith("https://xmp.pm/status/");
-    const insertArgs = bindings.find((args) => args.length === 14);
+    const insertArgs = bindings.find((args) => args.length === 15);
     expect(insertArgs).toBeDefined();
     const expiresAt = insertArgs?.[13] as number;
     expect(expiresAt).toBeGreaterThanOrEqual(now + 7 * 86400);
