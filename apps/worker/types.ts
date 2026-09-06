@@ -12,6 +12,7 @@ export type Env = {
   RATE_LIMIT_BYPASS_IPS?: string;
   TELEGRAM_BOT_TOKEN: string;
   TELEGRAM_WEBHOOK_SECRET: string;
+  BETTERSTACK_WEBHOOK_SECRET: string;
   AGENT_BEARER_TOKEN: string;
   TURNSTILE_SECRET_KEY: string;
   TURNSTILE_SITE_KEY: string;

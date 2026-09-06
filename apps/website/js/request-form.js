@@ -14,7 +14,7 @@
     if (!submitBtn || !state) return;
     submitBtn.disabled = true;
     submitBtn.setAttribute("aria-disabled", "true");
-    state.textContent = "Complete Turnstile to enable submit.";
+    state.textContent = "Complete the CAPTCHA to enable submit.";
   }
 
   window.onTurnstileSuccess = enableSubmit;

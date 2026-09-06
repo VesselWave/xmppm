@@ -231,9 +231,9 @@ function requestForm(env: Env): Response {
         <p id="message-help" class="help">10+ characters. Say how you heard about xmp.pm, what client you plan to use, or why this small server fits you.</p>
         <label class="check"><input type="checkbox" name="aup" value="yes" required> I agree to follow the xmp.pm acceptable-use rules.</label>
         <div class="cf-turnstile" data-sitekey="${htmlEscape(env.TURNSTILE_SITE_KEY)}" data-callback="onTurnstileSuccess" data-expired-callback="onTurnstileUnavailable" data-error-callback="onTurnstileUnavailable"></div>
-        <p id="turnstile-state" class="submit-note" aria-live="polite">Complete Turnstile to enable submit.</p>
-        <p class="submit-note">If Turnstile fails or stays blocked, contact <a href="mailto:vesselwave@protonmail.com">vesselwave@protonmail.com</a> or <a href="xmpp:admin@xmp.pm">admin@xmp.pm on XMPP</a>.</p>
-        <noscript><p class="submit-note">JavaScript is required for Turnstile. If you cannot enable it, contact <a href="mailto:vesselwave@protonmail.com">vesselwave@protonmail.com</a> or <a href="xmpp:admin@xmp.pm">admin@xmp.pm on XMPP</a>.</p></noscript>
+        <p id="turnstile-state" class="submit-note" aria-live="polite">Complete the CAPTCHA to enable submit.</p>
+        <p class="submit-note">If the CAPTCHA fails or stays blocked, contact <a href="mailto:vesselwave@protonmail.com">vesselwave@protonmail.com</a> or <a href="xmpp:admin@xmp.pm">admin@xmp.pm on XMPP</a>.</p>
+        <noscript><p class="submit-note">JavaScript is required for the CAPTCHA. If you cannot enable it, contact <a href="mailto:vesselwave@protonmail.com">vesselwave@protonmail.com</a> or <a href="xmpp:admin@xmp.pm">admin@xmp.pm on XMPP</a>.</p></noscript>
         <p class="submit-note">You’ll get a private status link. Usually reviewed within 15m, sometimes up to 12h.</p>
         <div class="actions">
           <button id="request-submit" type="submit" disabled aria-disabled="true">Submit request</button>
@@ -271,7 +271,7 @@ async function handleSubmit(request: Request, env: Env): Promise<Response> {
 
       const turnstileToken = String(form.get("cf-turnstile-response") ?? "");
       const okTurnstile = await verifyTurnstile(env.TURNSTILE_SECRET_KEY, turnstileToken, remoteIp);
-      if (!okTurnstile) return html("Turnstile validation failed.", 400);
+      if (!okTurnstile) return html("CAPTCHA validation failed.", 400);
     }
 
     const secret = createId(32);
@@ -470,6 +470,37 @@ async function handleTelegram(request: Request, env: Env, pathname: string): Pro
   return json({ ok: true });
 }
 
+async function handleBetterStack(request: Request, env: Env): Promise<Response> {
+  if (request.headers.get("authorization") !== `Bearer ${env.BETTERSTACK_WEBHOOK_SECRET}`) {
+    return json({ ok: false }, 403);
+  }
+
+  const payload = (await request.json()) as {
+    event?: unknown;
+    monitor?: unknown;
+    cause?: unknown;
+    incident_url?: unknown;
+  };
+  const event = safeSummary(String(payload.event ?? "incident update"), 80);
+  const monitor = safeSummary(String(payload.monitor ?? "xmp.pm"), 120);
+  const cause = safeSummary(String(payload.cause ?? "No cause supplied"), 500);
+  const incidentUrl = String(payload.incident_url ?? "");
+  const text = [`xmp.pm Better Stack: ${event}`, monitor, cause, incidentUrl].filter(Boolean).join("\n");
+
+  const telegramResponse = await fetch(`https://api.telegram.org/bot${env.TELEGRAM_BOT_TOKEN}/sendMessage`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({
+      chat_id: env.TELEGRAM_ADMIN_CHAT_ID,
+      disable_web_page_preview: true,
+      text,
+    }),
+  });
+  const result = (await telegramResponse.json()) as { ok?: boolean; description?: string };
+  if (!result.ok) return json({ ok: false, error: result.description ?? "Telegram send failed" }, 502);
+  return json({ ok: true });
+}
+
 function requireAgent(request: Request, env: Env): Response | null {
   const expected = `Bearer ${env.AGENT_BEARER_TOKEN}`;
   return request.headers.get("authorization") === expected ? null : json({ error: "unauthorized" }, 401);
@@ -619,6 +650,7 @@ async function handleRequest(request: Request, env: Env): Promise<Response> {
   if (request.method === "POST" && url.pathname.match(/^\/status\/[^/]+\/password$/)) return await handlePasswordSubmit(url.pathname, request, env);
   if ((request.method === "GET" || request.method === "HEAD") && url.pathname.startsWith("/status/")) return await handleStatus(url.pathname, env);
   if (request.method === "POST" && url.pathname.startsWith("/telegram/webhook/")) return await handleTelegram(request, env, url.pathname);
+  if (request.method === "POST" && url.pathname === "/betterstack/webhook") return await handleBetterStack(request, env);
   if (request.method === "GET" && url.pathname === "/agent/jobs") return await handleAgentJobs(request, env);
   if (request.method === "POST" && url.pathname.startsWith("/agent/jobs/")) return await handleAgentInvite(request, env, url.pathname);
   if (request.method === "GET" || request.method === "HEAD") {

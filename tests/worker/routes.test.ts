@@ -63,6 +63,7 @@ describe("worker routes", () => {
     RATE_LIMIT_MAX_SUBMISSIONS: "3",
     TELEGRAM_BOT_TOKEN: "token",
     TELEGRAM_WEBHOOK_SECRET: "secret",
+    BETTERSTACK_WEBHOOK_SECRET: "betterstack-secret",
     AGENT_BEARER_TOKEN: "agent-secret",
     TURNSTILE_SECRET_KEY: "turnstile-secret",
     TURNSTILE_SITE_KEY: "site-key",
@@ -130,11 +131,11 @@ describe("worker routes", () => {
     expect(text).toContain('<button id="request-submit" type="submit" disabled aria-disabled="true">Submit request</button>');
     expect(text).not.toContain("submitBtn.textContent");
     expect(text).toContain('id="turnstile-state"');
-    expect(text).toContain('If Turnstile fails or stays blocked');
+    expect(text).toContain('If the CAPTCHA fails or stays blocked');
     expect(text).toContain('xmpp:admin@xmp.pm');
     expect(text).toContain('mailto:vesselwave@protonmail.com');
     expect(text).toContain('<noscript>');
-    expect(text).toContain('JavaScript is required for Turnstile');
+    expect(text).toContain('JavaScript is required for the CAPTCHA');
     expect(text).not.toContain('window.onTurnstileSuccess =');
     expect(text).not.toContain("document.addEventListener('DOMContentLoaded'");
     expect(text).not.toContain("submitBtn.disabled = false");
@@ -620,6 +621,52 @@ describe("worker routes", () => {
     expect(response.status).toBe(200);
     expect(savedPubKey).toBe(pem);
     expect(sqlStatements.some((sql) => sql.includes("password setup expired") && sql.includes("invite_url = NULL"))).toBe(true);
+  });
+
+  it("forwards authenticated Better Stack incidents to Telegram", async () => {
+    const requests: Request[] = [];
+    globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+      requests.push(new Request(input, init));
+      return Response.json({ ok: true, result: { message_id: 123 } });
+    }) as typeof fetch;
+
+    const response = await worker.fetch(
+      new Request("https://xmp.pm/betterstack/webhook", {
+        method: "POST",
+        headers: {
+          authorization: "Bearer betterstack-secret",
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({
+          event: "incident_created",
+          monitor: "xmp.pm XMPP client",
+          cause: "TCP connection failed",
+          incident_url: "https://uptime.betterstack.com/incidents/123",
+        }),
+      }),
+      { ...env, BETTERSTACK_WEBHOOK_SECRET: "betterstack-secret" } as Env
+    );
+
+    expect(response.status).toBe(200);
+    const telegramRequest = requests.find((request) => request.url.includes("api.telegram.org/bottoken/sendMessage"));
+    expect(telegramRequest).toBeDefined();
+    const telegramBody = await telegramRequest?.json() as { chat_id: string; text: string };
+    expect(telegramBody.chat_id).toBe("1");
+    expect(telegramBody.text).toContain("xmp.pm XMPP client");
+    expect(telegramBody.text).toContain("TCP connection failed");
+  });
+
+  it("rejects Better Stack webhooks with the wrong secret", async () => {
+    const response = await worker.fetch(
+      new Request("https://xmp.pm/betterstack/webhook", {
+        method: "POST",
+        headers: { authorization: "Bearer wrong" },
+        body: JSON.stringify({ event: "incident_created" }),
+      }),
+      { ...env, BETTERSTACK_WEBHOOK_SECRET: "betterstack-secret" } as Env
+    );
+
+    expect(response.status).toBe(403);
   });
 
   it("rejects telegram webhook without secret header", async () => {
