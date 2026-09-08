@@ -5,15 +5,12 @@
   }
 
   document.addEventListener("DOMContentLoaded", () => {
-    document.querySelectorAll("[data-refresh-minutes][data-refresh-key][data-refresh-url]").forEach((panel) => {
+    document.querySelectorAll("[data-refresh-seconds][data-refresh-url]").forEach((panel) => {
       const button = panel.querySelector("[data-refresh-now]");
       if (button) button.addEventListener("click", () => refresh(panel));
 
-      const key = panel.getAttribute("data-refresh-key") || "xmppm_status_refresh";
-      const attemptKey = key + ":attempt";
-      const attempt = Number(sessionStorage.getItem(attemptKey) || "0");
-      sessionStorage.setItem(attemptKey, String(attempt + 1));
-      const delay = Math.min(60000, 7000 * 2 ** attempt);
+      const seconds = Number(panel.getAttribute("data-refresh-seconds"));
+      const delay = Number.isFinite(seconds) && seconds > 0 ? seconds * 1000 : 7000;
       setTimeout(() => refresh(panel), delay);
     });
   });

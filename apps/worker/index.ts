@@ -114,12 +114,12 @@ function statusTicket(title: string, body: string, stub = ["queue", "xmp.pm", "f
 function statusRefreshPanel(refreshUrl: string, refreshKey: string): string {
   const checkedAt = new Date().toISOString().replace("T", " ").slice(0, 19) + " UTC";
   return `
-    <section class="status-refresh" data-refresh-minutes="30" data-refresh-key="${htmlEscape(refreshKey)}" data-refresh-url="${htmlEscape(refreshUrl)}">
-      <p class="note">Last checked: <time>${htmlEscape(checkedAt)}</time></p>
+    <section class="status-refresh" data-refresh-seconds="7" data-refresh-key="${htmlEscape(refreshKey)}" data-refresh-url="${htmlEscape(refreshUrl)}">
+      <p class="note">Checking every 7 seconds. Last checked: <time>${htmlEscape(checkedAt)}</time></p>
       <button type="button" data-refresh-now>Check again now</button>
       <p class="note">If this is stuck for more than 12h, contact <a href="mailto:vesselwave@protonmail.com">vesselwave@protonmail.com</a> or <a href="xmpp:admin@xmp.pm">admin@xmp.pm on XMPP</a>.</p>
     </section>
-    <script src="/js/status-refresh.js?v=2" defer></script>
+    <script src="/js/status-refresh.js?v=3" defer></script>
   `;
 }
 
@@ -390,7 +390,7 @@ async function handleStatus(pathname: string, env: Env): Promise<Response> {
   }
   return statusTicket(
     "Request pending",
-    `<p>Your request is pending. Keep this link. Check again manually any time; this page also checks for up to 30 minutes with backoff, then stops.</p>` +
+    `<p>Your request is waiting for human review. Keep this page open and it will check every 7 seconds until the review is complete.</p>` +
     `<ol class="status-steps" aria-label="request progress"><li data-state="done">Request received</li><li data-state="waiting">Human review</li><li>Account setup</li></ol>` +
     `<p class="note">Usually approved in less than 15m, up to 12h. You do not need to resubmit.</p>` +
     statusRefreshPanel(`/status/${encodeURIComponent(secret)}`, `xmppm_pending_${encodeURIComponent(secret)}`)
