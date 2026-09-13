@@ -5,6 +5,7 @@ BACKUP_DIR=${XMPPM_BACKUP_DIR:-/var/backups/xmppm}
 KEY_FILE=${XMPPM_BACKUP_KEY_FILE:-/etc/xmppm-backup.key}
 MARKER=${XMPPM_BACKUP_MARKER:-/var/lib/xmppm-agent/backup-ok}
 RETENTION_DAYS=${XMPPM_BACKUP_RETENTION_DAYS:-14}
+HEARTBEAT_URL=${XMPPM_BACKUP_HEARTBEAT_URL:-}
 STAMP=$(date -u +%Y%m%dT%H%M%SZ)
 HOST=$(hostname -f 2>/dev/null || hostname)
 SNAPSHOT="$BACKUP_DIR/xmppm-$HOST-$STAMP.tar.gz.enc"
@@ -23,6 +24,9 @@ record_error() {
   printf 'exit %s at line %s: %.160s\n' "$exit_code" "$line" "$command" >"$ERROR_MARKER" || true
   chown xmppm-agent:xmppm-agent "$ERROR_MARKER" 2>/dev/null || true
   chmod 0640 "$ERROR_MARKER" 2>/dev/null || true
+  if [[ -n "$HEARTBEAT_URL" ]]; then
+    curl --fail --silent --show-error --max-time 15 "$HEARTBEAT_URL/fail" >/dev/null || true
+  fi
 }
 trap cleanup EXIT
 trap 'record_error "$?" "$LINENO" "$BASH_COMMAND"' ERR
@@ -47,6 +51,7 @@ paths=(
   /opt/ejabberd/conf/ejabberd.yml
   /usr/local/etc/ejabberd
   /etc/xmppm-agent.env
+  /etc/xmppm-backup.env
   /etc/systemd/system/xmppm-agent.service
   /etc/systemd/system/xmppm-backup.service
   /etc/systemd/system/xmppm-backup.timer
@@ -82,5 +87,10 @@ chmod 0640 "$MARKER"
 rm -f "$ERROR_MARKER"
 
 find "$BACKUP_DIR" -maxdepth 1 -type f -name 'xmppm-*.tar.gz.enc' -mtime "+$RETENTION_DAYS" -delete
+
+if [[ -n "$HEARTBEAT_URL" ]]; then
+  curl --fail --silent --show-error --max-time 15 "$HEARTBEAT_URL" >/dev/null \
+    || printf 'warning: failed to send backup heartbeat\n' >&2
+fi
 
 echo "backup ok: $SNAPSHOT"

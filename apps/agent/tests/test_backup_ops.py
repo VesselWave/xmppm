@@ -15,10 +15,14 @@ def test_backup_ops_files_install_daily_encrypted_verified_snapshots():
     assert "tar -tzf" in script
     assert "backup-ok" in script
     assert "backup-error" in script
+    assert "XMPPM_BACKUP_HEARTBEAT_URL" in script
+    assert '"$HEARTBEAT_URL/fail"' in script
     assert "record_error" in script
 
     assert service.exists()
-    assert "ExecStart=/usr/local/sbin/xmppm-backup" in service.read_text()
+    service_text = service.read_text()
+    assert "ExecStart=/usr/local/sbin/xmppm-backup" in service_text
+    assert "EnvironmentFile=-/etc/xmppm-backup.env" in service_text
 
     assert timer.exists()
     timer_text = timer.read_text()

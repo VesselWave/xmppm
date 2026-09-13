@@ -37,6 +37,9 @@ describe("deploy entrypoints", () => {
     expect(vpsNginxConfig).not.toContain("location = /request");
     expect(vpsNginxConfig).toContain("server_name xmpp.xmp.pm");
     expect(vpsNginxConfig).toContain("location = /healthz");
+    expect(vpsNginxConfig).toContain("location = /healthz/xmpp");
+    expect(vpsNginxConfig).toContain("location = /healthz/upload");
+    expect(deployScript).toContain("docker exec xmppm-worker-proxy nginx -s reload");
     expect(vpsNginxConfig).toContain("location /ws");
     expect(vpsNginxConfig).toContain("location /bosh");
     expect(vpsCompose).toContain("Host(`xmpp.xmp.pm`)");

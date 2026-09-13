@@ -437,6 +437,7 @@ sudo ufw allow 443/tcp comment 'xmppm HTTPS gateway' >/dev/null || true
 sudo iptables -C INPUT -p tcp --dport 80 -j ACCEPT 2>/dev/null || sudo iptables -I INPUT -p tcp --dport 80 -j ACCEPT
 sudo iptables -C INPUT -p tcp --dport 443 -j ACCEPT 2>/dev/null || sudo iptables -I INPUT -p tcp --dport 443 -j ACCEPT
 sudo docker compose up -d --remove-orphans
+sudo docker exec xmppm-worker-proxy nginx -s reload
 }
 
 run_cert_sync_with_retry() {
