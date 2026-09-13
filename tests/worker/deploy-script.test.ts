@@ -64,6 +64,9 @@ describe("deploy entrypoints", () => {
   });
 
   test("Traefik requests SANs for ejabberd virtual-service certificate warnings", () => {
+    expect(vpsCompose).toContain("acme.httpchallenge=true");
+    expect(vpsCompose).toContain("acme.httpchallenge.entrypoint=web");
+    expect(vpsCompose).not.toContain("acme.tlschallenge=true");
     expect(vpsCompose).toContain("traefik.http.routers.xmppm.tls.domains[0].main=xmpp.xmp.pm");
     expect(vpsCompose).toContain("conference.xmp.pm");
     expect(vpsCompose).toContain("pubsub.xmp.pm");

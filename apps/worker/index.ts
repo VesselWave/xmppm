@@ -94,6 +94,15 @@ async function discoveryAsset(env: Env, request: Request): Promise<Response> {
   return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
 }
 
+async function acmeChallenge(request: Request): Promise<Response> {
+  const url = new URL(request.url);
+  url.protocol = "http:";
+  url.port = "";
+  return await fetch(new Request(url.toString(), request), {
+    cf: { resolveOverride: "xmpp.xmp.pm" },
+  });
+}
+
 function statusTicket(title: string, body: string, stub = ["queue", "xmp.pm", "federated"], status = 200): Response {
   return html(`
     <main class="ticket">
@@ -578,6 +587,9 @@ async function handleRequest(request: Request, env: Env): Promise<Response> {
     return new Response(null, { status: 301, headers: { location: url.toString() } });
   }
   const isLocal = isLocalPreviewHost(url.hostname);
+  if ((request.method === "GET" || request.method === "HEAD") && url.pathname.startsWith("/.well-known/acme-challenge/")) {
+    return await acmeChallenge(request);
+  }
   if ((request.method === "GET" || request.method === "HEAD") && url.pathname === "/") {
     return await asset(env, "/index.html", request);
   }

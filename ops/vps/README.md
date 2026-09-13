@@ -11,6 +11,18 @@ Active gateway path: `$TARGET:$REMOTE_GATEWAY_DIR/docker-compose.yml` + `xmppm-n
 - `/healthz` returns `ok`
 
 `xmp.pm` public pages and invite/API routes are served by Cloudflare Worker Assets + Worker code.
+The Worker forwards `/.well-known/acme-challenge/*` to this gateway so Traefik can
+renew the apex certificate used by native XMPP while the website remains proxied.
+
+Certificate monitoring is deliberately split across failure domains:
+
+- The VPS agent checks the public `xmpp.xmp.pm:5223` TLS handshake with `xmp.pm`
+  as the required identity every poll, alerts Telegram below 21 days, and reports
+  recovery.
+- The agent also checks that the daily certificate-sync timer is active and that
+  its most recent run succeeded.
+- Better Stack monitors port 5223 externally, so a VPS or monitoring-agent outage
+  still raises an incident through the existing Better Stack alert integration.
 
 ## Firewall
 

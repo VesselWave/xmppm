@@ -60,6 +60,10 @@ key_out.write_bytes(primary_key)
 PY
 
 openssl x509 -in "$TMPDIR/fullchain.pem" -noout -subject -dates >"$TMPDIR/cert-info.txt"
+if ! openssl x509 -in "$TMPDIR/fullchain.pem" -checkend 86400 -noout; then
+  echo "Traefik certificate for xmp.pm is expired or expires within 24 hours" >&2
+  exit 1
+fi
 
 if [[ -f "$CERT_OUT" ]] && [[ -f "$KEY_OUT" ]] && cmp -s "$TMPDIR/fullchain.pem" "$CERT_OUT" && cmp -s "$TMPDIR/privkey.pem" "$KEY_OUT"; then
   chown root:ejabberd "$CERT_OUT" "$KEY_OUT"

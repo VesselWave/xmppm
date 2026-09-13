@@ -73,6 +73,13 @@ def check_systemd(unit: str) -> CheckResult:
     return CheckResult(unit, ok, detail)
 
 
+def check_systemd_oneshot(unit: str) -> CheckResult:
+    reason = _systemd_failure_reason(unit)
+    if reason:
+        return CheckResult(unit, False, reason)
+    return CheckResult(unit, True, "last run succeeded")
+
+
 def check_tcp(host: str, port: int, timeout: float = 5.0) -> CheckResult:
     try:
         with socket.create_connection((host, port), timeout=timeout):
@@ -118,20 +125,28 @@ def check_docker_container(name: str) -> CheckResult:
     return CheckResult(f"docker:{name}", ok, detail)
 
 
-def check_cert_expiry(host: str, port: int = 443, min_days: int = 14) -> CheckResult:
+def check_cert_expiry(
+    host: str,
+    port: int = 443,
+    min_days: int = 21,
+    *,
+    server_name: str | None = None,
+    name: str = "cert",
+) -> CheckResult:
+    identity = server_name or host
     context = ssl.create_default_context()
     try:
         with (
             socket.create_connection((host, port), timeout=10) as sock,
-            context.wrap_socket(sock, server_hostname=host) as tls,
+            context.wrap_socket(sock, server_hostname=identity) as tls,
         ):
             cert = tls.getpeercert()
         not_after = cert["notAfter"]
         expires = ssl.cert_time_to_seconds(not_after)
         days = int((expires - time.time()) / 86400)
-        return CheckResult("cert", days >= min_days, f"{days} days left")
+        return CheckResult(name, days >= min_days, f"{days} days left; {identity} via {host}:{port}")
     except Exception as exc:
-        return CheckResult("cert", False, str(exc))
+        return CheckResult(name, False, f"{identity} via {host}:{port}: {exc}")
 
 
 def check_resource_headroom(
@@ -178,6 +193,8 @@ def check_backup_freshness(
 def run_checks() -> list[CheckResult]:
     return [
         check_systemd("ejabberd"),
+        check_systemd("xmppm-ejabberd-cert-sync.timer"),
+        check_systemd_oneshot("xmppm-ejabberd-cert-sync.service"),
         check_docker_container("xmppm-traefik"),
         check_docker_container("xmppm-worker-proxy"),
         check_tcp("127.0.0.1", 5222),
@@ -186,7 +203,10 @@ def run_checks() -> list[CheckResult]:
         check_disk(),
         check_resource_headroom(),
         check_backup_freshness(),
-        check_cert_expiry("xmp.pm"),
+        check_cert_expiry("xmp.pm", name="cert:https"),
+        check_cert_expiry(
+            "xmpp.xmp.pm", 5223, server_name="xmp.pm", name="cert:xmpp"
+        ),
     ]
 
 

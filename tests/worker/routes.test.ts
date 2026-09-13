@@ -95,6 +95,24 @@ describe("worker routes", () => {
     return { ...baseEnv, ASSETS: assets, ...overrides };
   }
 
+  it("forwards ACME HTTP challenges to the VPS gateway", async () => {
+    let forwardedUrl = "";
+    globalThis.fetch = (async (request: RequestInfo | URL, init?: RequestInit<RequestInitCfProperties>) => {
+      forwardedUrl = request instanceof Request ? request.url : String(request);
+      expect(init?.cf?.resolveOverride).toBe("xmpp.xmp.pm");
+      return new Response("challenge-response");
+    }) as typeof fetch;
+
+    const response = await worker.fetch(
+      new Request("https://xmp.pm/.well-known/acme-challenge/test-token"),
+      assetEnv()
+    );
+
+    expect(response.status).toBe(200);
+    expect(await response.text()).toBe("challenge-response");
+    expect(forwardedUrl).toBe("http://xmp.pm/.well-known/acme-challenge/test-token");
+  });
+
   const env = assetEnv();
 
   it("redirects www.xmp.pm to xmp.pm preserving path and query", async () => {

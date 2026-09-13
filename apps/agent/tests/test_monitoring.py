@@ -10,6 +10,7 @@ from xmppm_agent.monitoring import (
     check_docker_container,
     check_resource_headroom,
     check_systemd,
+    check_systemd_oneshot,
     state_changes,
     summarize_results,
 )
@@ -135,6 +136,26 @@ def test_systemd_check_reports_unplanned_failure_result(monkeypatch):
     )
 
 
+def test_systemd_oneshot_reports_last_failure(monkeypatch):
+    monkeypatch.setattr(
+        monitoring,
+        "_systemd_failure_reason",
+        lambda unit: "systemd result exit-code, exited 1",
+    )
+
+    assert check_systemd_oneshot("cert-sync.service") == CheckResult(
+        "cert-sync.service", False, "systemd result exit-code, exited 1"
+    )
+
+
+def test_systemd_oneshot_accepts_successful_inactive_service(monkeypatch):
+    monkeypatch.setattr(monitoring, "_systemd_failure_reason", lambda unit: None)
+
+    assert check_systemd_oneshot("cert-sync.service") == CheckResult(
+        "cert-sync.service", True, "last run succeeded"
+    )
+
+
 def test_docker_container_check_uses_sudo_for_read_only_inspect(monkeypatch):
     calls = []
 
@@ -253,6 +274,7 @@ def test_run_checks_includes_resource_headroom(monkeypatch):
         return lambda *args, **kwargs: CheckResult(name, True, "ok")
 
     monkeypatch.setattr(monitoring, "check_systemd", fake_check("systemd"))
+    monkeypatch.setattr(monitoring, "check_systemd_oneshot", fake_check("oneshot"))
     monkeypatch.setattr(monitoring, "check_docker_container", fake_check("docker"))
     monkeypatch.setattr(monitoring, "check_tcp", fake_check("tcp"))
     monkeypatch.setattr(monitoring, "check_disk", fake_check("disk"))
@@ -270,6 +292,7 @@ def test_run_checks_includes_backup_freshness(monkeypatch):
         return lambda *args, **kwargs: CheckResult(name, True, "ok")
 
     monkeypatch.setattr(monitoring, "check_systemd", fake_check("systemd"))
+    monkeypatch.setattr(monitoring, "check_systemd_oneshot", fake_check("oneshot"))
     monkeypatch.setattr(monitoring, "check_docker_container", fake_check("docker"))
     monkeypatch.setattr(monitoring, "check_tcp", fake_check("tcp"))
     monkeypatch.setattr(monitoring, "check_disk", fake_check("disk"))
@@ -296,8 +319,17 @@ def test_run_checks_probes_upload_on_private_gateway_bind(monkeypatch):
     )
     monkeypatch.setattr(monitoring, "check_tcp", fake_tcp)
     monkeypatch.setattr(monitoring, "check_disk", lambda: CheckResult("disk", True, "ok"))
+    cert_checks = []
+
+    def fake_cert(host: str, port: int = 443, **kwargs):
+        cert_checks.append((host, port, kwargs))
+        return CheckResult(kwargs.get("name", "cert"), True, "ok")
+
+    monkeypatch.setattr(monitoring, "check_cert_expiry", fake_cert)
     monkeypatch.setattr(
-        monitoring, "check_cert_expiry", lambda host: CheckResult("cert", True, "ok")
+        monitoring,
+        "check_systemd_oneshot",
+        lambda unit: CheckResult(unit, True, "last run succeeded"),
     )
     monkeypatch.setattr(
         monitoring, "check_backup_freshness", lambda: CheckResult("backup", True, "ok")
@@ -307,3 +339,8 @@ def test_run_checks_probes_upload_on_private_gateway_bind(monkeypatch):
 
     assert ("172.17.0.1", 5443) in tcp_checks
     assert ("127.0.0.1", 5443) not in tcp_checks
+    assert (
+        "xmpp.xmp.pm",
+        5223,
+        {"server_name": "xmp.pm", "name": "cert:xmpp"},
+    ) in cert_checks

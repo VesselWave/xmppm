@@ -17,6 +17,7 @@ describe("ejabberd certificate sync automation", () => {
 
   test("updates ejabberd certs safely and restarts ejabberd only on change", () => {
     expect(script).toContain("openssl x509");
+    expect(script).toContain("-checkend 86400");
     expect(script).toContain("cmp -s");
     expect(script).toContain("/var/lib/xmppm-agent/ejabberd-reason");
     expect(script).toContain("scheduled TLS certificate update");
