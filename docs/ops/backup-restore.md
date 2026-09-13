@@ -12,6 +12,13 @@ Snapshots live in `/var/backups/xmppm/` as `xmppm-<host>-<utc>.tar.gz.enc` and a
 
 `/var/lib/xmppm-agent/backup-ok` is touched only after decrypt+tar-list integrity verification succeeds. The monitoring agent fails the `backup` check if this marker is older than 30h or missing.
 
+When `/etc/xmppm-backup.env` defines `XMPPM_BACKUP_HEARTBEAT_URL`, a verified
+backup sends a success request to Better Stack. Any error sends a request to the
+same URL with `/fail` appended before the backup command exits. Keep that file
+`0600 root:root`; the heartbeat URL contains a private token and must not be
+committed or printed in logs. The environment file is included in the encrypted
+snapshot so a restored host retains its monitoring configuration.
+
 ## Manual backup
 
 ```bash

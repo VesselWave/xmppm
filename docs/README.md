@@ -8,3 +8,5 @@ ignored `private/` tree.
 
 - [`ops/backup-restore.md`](ops/backup-restore.md) - backup layout, restore
   procedure, and verification.
+- [`ops/status-page.md`](ops/status-page.md) - Better Stack status-page layout,
+  health probes, backup heartbeat, and the initial production outage drill.
