@@ -57,7 +57,10 @@ while [[ $# -gt 0 ]]; do
   shift
 done
 
-need() { command -v "$1" >/dev/null || { echo "missing command: $1" >&2; exit 1; }; }
+need() { command -v "$1" >/dev/null || {
+  echo "missing command: $1" >&2
+  exit 1
+}; }
 need python3
 
 SQL="SELECT id, desired_username, status, invite_url, created_at, decided_at, invite_ready_at, expires_at FROM invite_requests WHERE status IN ('pending', 'approved_pending_invite', 'invite_ready', 'invite_failed') ORDER BY status, desired_username;"
@@ -71,7 +74,13 @@ if [[ -n "$D1_JSON" ]]; then
   cp "$D1_JSON" "$D1_OUT"
 else
   need bunx
-  bunx wrangler d1 execute "$DB_NAME" --remote --json --command "$SQL" >"$D1_OUT"
+  bunx wrangler whoami >/dev/null 2>&1 || true
+  if ! bunx wrangler d1 execute "$DB_NAME" --remote --json --command "$SQL" >"$D1_OUT"; then
+    echo "wrangler d1 execute failed; refreshing session and retrying..." >&2
+    rm -f .wrangler/cache/wrangler-account.json
+    bunx wrangler whoami >/dev/null 2>&1 || true
+    bunx wrangler d1 execute "$DB_NAME" --remote --json --command "$SQL" >"$D1_OUT"
+  fi
 fi
 
 if [[ -n "$REGISTERED_USERS" ]]; then

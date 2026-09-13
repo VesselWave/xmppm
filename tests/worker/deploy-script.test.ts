@@ -194,6 +194,14 @@ describe("deploy entrypoints", () => {
     expect(deployScript).toContain("module_install mod_pubsub_serverinfo");
   });
 
+  test("worker deploy pre-warms and refreshes wrangler session on failure", () => {
+    expect(deployScript).toContain("run_wrangler()");
+    expect(deployScript).toContain("bunx wrangler whoami >/dev/null 2>&1 || true");
+    expect(deployScript).toContain("rm -f .wrangler/cache/wrangler-account.json");
+    expect(deployScript).toContain("run_wrangler d1 migrations apply");
+    expect(deployScript).toContain("run_wrangler deploy");
+  });
+
 });
 
 describe("deploy script SSL backups", () => {

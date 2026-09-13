@@ -158,16 +158,28 @@ backup_ssl_certs() {
 
 cd "$ROOT"
 
+run_wrangler() {
+  # Pre-warm/validate wrangler session to refresh OAuth tokens before D1 queries
+  bunx wrangler whoami >/dev/null 2>&1 || true
+
+  if ! bunx wrangler "$@"; then
+    echo "wrangler $* failed; refreshing session and retrying..." >&2
+    rm -f .wrangler/cache/wrangler-account.json
+    bunx wrangler whoami >/dev/null 2>&1 || true
+    bunx wrangler "$@"
+  fi
+}
+
 if [[ "$ONLY" == "all" || "$ONLY" == "worker" ]]; then
   ops/fetch-converse.sh
   bun test
   bun run typecheck
-  bunx wrangler d1 migrations apply xmppm_invites --remote
+  run_wrangler d1 migrations apply xmppm_invites --remote
   if [[ $RESET -eq 1 ]]; then
-    bunx wrangler d1 execute xmppm_invites --remote --command \
+    run_wrangler d1 execute xmppm_invites --remote --command \
       "DELETE FROM invite_audit; DELETE FROM invite_requests; DELETE FROM rate_limits;"
   fi
-  bunx wrangler deploy
+  run_wrangler deploy
 fi
 
 if [[ "$ONLY" == "worker" ]]; then

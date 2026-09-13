@@ -52,7 +52,7 @@ main {
 }
 
 h1, h2, h3 { line-height: 1.05; margin: 0 0 .75rem; }
-h1 { font-size: clamp(2.4rem, 8vw, 6rem); letter-spacing: -.07em; }
+h1 { font-size: clamp(2.4rem, 8vw, 6rem); letter-spacing: -.04em; }
 h2 { font-size: clamp(1.35rem, 3vw, 2rem); }
 p { margin: 0 0 1rem; }
 
@@ -75,20 +75,26 @@ p { margin: 0 0 1rem; }
   letter-spacing: .08em;
 }
 
-.cta-row {
-  text-align: center;
-  margin: 2rem 0 .5rem;
+.header-copy > p {
+  max-width: 34rem;
+  margin-bottom: 1.25rem;
 }
 
 .cta {
   border-width: 2px;
   background: var(--ink);
   color: var(--paper);
-  padding: 1rem 1.35rem;
+  padding: .85rem 1.15rem;
   font-size: 1.1rem;
+  font-weight: 700;
 }
 
 .cta:hover { color: var(--paper); background: var(--green); }
+
+.button:focus-visible {
+  outline: 3px solid var(--red);
+  outline-offset: 3px;
+}
 
 .grid {
   display: grid;

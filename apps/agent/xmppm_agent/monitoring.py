@@ -48,9 +48,7 @@ def _systemd_failure_reason(unit: str) -> str | None:
         check=False,
         timeout=10,
     )
-    values = dict(
-        line.split("=", 1) for line in result.stdout.splitlines() if "=" in line
-    )
+    values = dict(line.split("=", 1) for line in result.stdout.splitlines() if "=" in line)
     service_result = values.get("Result", "")
     code = values.get("ExecMainCode", "")
     status = values.get("ExecMainStatus", "")
@@ -144,7 +142,9 @@ def check_cert_expiry(
         not_after = cert["notAfter"]
         expires = ssl.cert_time_to_seconds(not_after)
         days = int((expires - time.time()) / 86400)
-        return CheckResult(name, days >= min_days, f"{days} days left; {identity} via {host}:{port}")
+        return CheckResult(
+            name, days >= min_days, f"{days} days left; {identity} via {host}:{port}"
+        )
     except Exception as exc:
         return CheckResult(name, False, f"{identity} via {host}:{port}: {exc}")
 
@@ -204,9 +204,7 @@ def run_checks() -> list[CheckResult]:
         check_resource_headroom(),
         check_backup_freshness(),
         check_cert_expiry("xmp.pm", name="cert:https"),
-        check_cert_expiry(
-            "xmpp.xmp.pm", 5223, server_name="xmp.pm", name="cert:xmpp"
-        ),
+        check_cert_expiry("xmpp.xmp.pm", 5223, server_name="xmp.pm", name="cert:xmpp"),
     ]
 
 
